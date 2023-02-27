@@ -201,7 +201,7 @@ class AuthHandler:
         for auth_checker_class in INTERACTIVE_AUTH_CHECKERS:
             inst = auth_checker_class(hs)
             if inst.is_enabled():
-                self.checkers[inst.AUTH_TYPE] = inst  # type: ignore
+                self.checkers[inst.AUTH_TYPE] = inst
 
         self.bcrypt_rounds = hs.config.registration.bcrypt_rounds
 
@@ -815,7 +815,6 @@ class AuthHandler:
         now_ms = self._clock.time_msec()
 
         if existing_token.expiry_ts is not None and existing_token.expiry_ts < now_ms:
-
             raise SynapseError(
                 HTTPStatus.FORBIDDEN,
                 "The supplied refresh token has expired",
@@ -1593,9 +1592,8 @@ class AuthHandler:
         if medium == "email":
             address = canonicalise_email(address)
 
-        identity_handler = self.hs.get_identity_handler()
-        result = await identity_handler.try_unbind_threepid(
-            user_id, {"medium": medium, "address": address, "id_server": id_server}
+        result = await self.hs.get_identity_handler().try_unbind_threepid(
+            user_id, medium, address, id_server
         )
 
         await self.store.user_delete_threepid(user_id, medium, address)
@@ -2031,7 +2029,7 @@ class PasswordAuthProvider:
         self.is_3pid_allowed_callbacks: List[IS_3PID_ALLOWED_CALLBACK] = []
 
         # Mapping from login type to login parameters
-        self._supported_login_types: Dict[str, Iterable[str]] = {}
+        self._supported_login_types: Dict[str, Tuple[str, ...]] = {}
 
         # Mapping from login type to auth checker callbacks
         self.auth_checker_callbacks: Dict[str, List[CHECK_AUTH_CALLBACK]] = {}
@@ -2260,7 +2258,6 @@ class PasswordAuthProvider:
     async def on_logged_out(
         self, user_id: str, device_id: Optional[str], access_token: str
     ) -> None:
-
         # call all of the on_logged_out callbacks
         for callback in self.on_logged_out_callbacks:
             try:

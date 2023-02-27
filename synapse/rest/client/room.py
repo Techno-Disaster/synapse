@@ -26,7 +26,7 @@ from prometheus_client.core import Histogram
 from twisted.web.server import Request
 
 from synapse import event_auth
-from synapse.api.constants import EventTypes, Membership
+from synapse.api.constants import Direction, EventTypes, Membership
 from synapse.api.errors import (
     AuthError,
     Codes,
@@ -44,6 +44,7 @@ from synapse.http.servlet import (
     RestServlet,
     assert_params_in_dict,
     parse_boolean,
+    parse_enum,
     parse_integer,
     parse_json_object_from_request,
     parse_string,
@@ -55,9 +56,9 @@ from synapse.logging.opentracing import set_tag
 from synapse.metrics.background_process_metrics import run_as_background_process
 from synapse.rest.client._base import client_patterns
 from synapse.rest.client.transactions import HttpTransactionCache
-from synapse.storage.state import StateFilter
 from synapse.streams.config import PaginationConfig
 from synapse.types import JsonDict, StreamToken, ThirdPartyInstanceID, UserID
+from synapse.types.state import StateFilter
 from synapse.util import json_decoder
 from synapse.util.cancellation import cancellable
 from synapse.util.stringutils import parse_and_validate_server_name, random_string
@@ -159,11 +160,11 @@ class RoomCreateRestServlet(TransactionRestServlet):
     async def on_POST(self, request: SynapseRequest) -> Tuple[int, JsonDict]:
         requester = await self.auth.get_user_by_req(request)
 
-        info, _ = await self._room_creation_handler.create_room(
+        room_id, _, _ = await self._room_creation_handler.create_room(
             requester, self.get_room_config(request)
         )
 
-        return 200, info
+        return 200, {"room_id": room_id}
 
     def get_room_config(self, request: Request) -> JsonDict:
         user_supplied_config = parse_json_object_from_request(request)
@@ -1297,7 +1298,7 @@ class TimestampLookupRestServlet(RestServlet):
         await self._auth.check_user_in_room_or_world_readable(room_id, requester)
 
         timestamp = parse_integer(request, "ts", required=True)
-        direction = parse_string(request, "dir", default="f", allowed_values=["f", "b"])
+        direction = parse_enum(request, "dir", Direction, default=Direction.FORWARDS)
 
         (
             event_id,

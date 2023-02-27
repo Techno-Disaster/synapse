@@ -18,7 +18,7 @@ from twisted.internet.defer import CancelledError
 
 from synapse.api.errors import ModuleFailedException, SynapseError
 from synapse.events import EventBase
-from synapse.events.snapshot import EventContext
+from synapse.events.snapshot import UnpersistedEventContextBase
 from synapse.storage.roommember import ProfileInfo
 from synapse.types import Requester, StateMap
 from synapse.util.async_helpers import delay_cancellation, maybe_awaitable
@@ -78,7 +78,6 @@ def load_legacy_third_party_event_rules(hs: "HomeServer") -> None:
         # correctly, we need to await its result. Therefore it doesn't make a lot of
         # sense to make it go through the run() wrapper.
         if f.__name__ == "check_event_allowed":
-
             # We need to wrap check_event_allowed because its old form would return either
             # a boolean or a dict, but now we want to return the dict separately from the
             # boolean.
@@ -100,7 +99,6 @@ def load_legacy_third_party_event_rules(hs: "HomeServer") -> None:
             return wrap_check_event_allowed
 
         if f.__name__ == "on_create_room":
-
             # We need to wrap on_create_room because its old form would return a boolean
             # if the room creation is denied, but now we just want it to raise an
             # exception.
@@ -231,7 +229,9 @@ class ThirdPartyEventRules:
             self._on_threepid_bind_callbacks.append(on_threepid_bind)
 
     async def check_event_allowed(
-        self, event: EventBase, context: EventContext
+        self,
+        event: EventBase,
+        context: UnpersistedEventContextBase,
     ) -> Tuple[bool, Optional[dict]]:
         """Check if a provided event should be allowed in the given context.
 

@@ -16,7 +16,7 @@
 import logging
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Pattern
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Pattern, Sequence
 
 import attr
 from netaddr import IPSet
@@ -245,7 +245,9 @@ class ApplicationService:
             return True
 
         # likewise with the room's aliases (if it has any)
-        alias_list = await store.get_aliases_for_room(room_id)
+        alias_list = await store.get_aliases_for_room(
+            room_id, on_invalidate=cache_context.invalidate
+        )
         for alias in alias_list:
             if self.is_room_alias_in_namespace(alias):
                 return True
@@ -311,7 +313,9 @@ class ApplicationService:
         # Find all the rooms the sender is in
         if self.is_interested_in_user(user_id.to_string()):
             return True
-        room_ids = await store.get_rooms_for_user(user_id.to_string())
+        room_ids = await store.get_rooms_for_user(
+            user_id.to_string(), on_invalidate=cache_context.invalidate
+        )
 
         # Then find out if the appservice is interested in any of those rooms
         for room_id in room_ids:
@@ -373,7 +377,7 @@ class AppServiceTransaction:
         self,
         service: ApplicationService,
         id: int,
-        events: List[EventBase],
+        events: Sequence[EventBase],
         ephemeral: List[JsonDict],
         to_device_messages: List[JsonDict],
         one_time_keys_count: TransactionOneTimeKeysCount,
