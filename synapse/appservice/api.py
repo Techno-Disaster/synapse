@@ -388,6 +388,46 @@ class ApplicationServiceApi(SimpleHttpClient):
         failed_transactions_counter.labels(service.id).inc()
         return False
 
+    async def claim_client_keys(
+        self, service: "ApplicationService", query: List[Tuple[str, str, str]]
+    ) -> Tuple[Dict[str, Dict[str, Dict[str, JsonDict]]], List[Tuple[str, str, str]]]:
+        """
+        Returns:
+            A tuple of:
+                A map of user ID -> a map device ID -> a map of key ID -> JSON dict.
+
+                A copy of the input which has not been fulfilled because the
+                appservice doesn't support this endpoint..
+        """
+        if service.url is None:
+            return {}, query
+
+        # This is required by the configuration.
+        assert service.hs_token is not None
+
+        # Create the expected payload shape.
+        body: Dict[str, Dict[str, List[str]]] = {}
+        for user_id, device, algorithm in query:
+            body.setdefault(user_id, {}).setdefault(device, []).append(algorithm)
+
+        # TODO Does service.url end up with the /v1 in it?
+        uri = f"{service.url}/unstable/org.matrix.msc3983/keys/claim"
+        try:
+            response = await self.post_json_get_json(
+                uri,
+                body,
+                headers={"Authorization": [f"Bearer {service.hs_token}"]},
+            )
+            return response, []
+        except CodeMessageException as e:
+            # The appservice doesn't support this endpoint.
+            if e.code == 404:
+                return {}, query
+            logger.warning("claim_keys to %s received %s", uri, e.code)
+        except Exception as ex:
+            logger.warning("claim_keys to %s threw exception %s", uri, ex)
+        return {}, query
+
     def _serialize(
         self, service: "ApplicationService", events: Iterable[EventBase]
     ) -> List[JsonDict]:
