@@ -899,3 +899,52 @@ class ApplicationServicesHandler:
                 missing.extend(result[1])
 
         return claimed_keys, missing
+
+    async def query_keys(
+        self, query: Dict[str, Optional[ List[str]]]
+    ) -> Iterable[Dict[str, Dict[str, Dict[str, JsonDict]]]]:
+        """Query application services for device keys.
+
+        Args:
+            query: map from user_id to a list of devices to query
+
+        Returns:
+            A map from user_id -> device_id -> device details
+        """
+        services = self.store.get_app_services()
+
+        # Partition the users by appservice.
+        query_by_appservice: Dict[str, Dict[str, List[str]]] = {}
+        for user_id, device_ids in query.items():
+            if not self.store.get_if_app_services_interested_in_user(user_id):
+                continue
+
+            # Find the associated appservice.
+            for service in services:
+                if service.is_exclusive_user(user_id):
+                    query_by_appservice.setdefault(service.id, {})[user_id] = device_ids
+                    continue
+
+        # Query each service in parallel.
+        results = await make_deferred_yieldable(
+            defer.DeferredList(
+                [
+                    run_in_background(
+                        self.appservice_api.query_keys,
+                        # We know this must be an app service.
+                        self.store.get_app_service_by_id(service_id),  # type: ignore[arg-type]
+                        service_query,
+                    )
+                    for service_id, service_query in query_by_appservice.items()
+                ],
+                consumeErrors=True,
+            )
+        )
+
+        # Patch together the results.
+        key_queries: List[Dict[str, Dict[str, Dict[str, JsonDict]]]] = []
+        for success, result in results:
+            if success:
+                key_queries.append(result)
+
+        return key_queries
