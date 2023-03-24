@@ -566,25 +566,11 @@ class E2eKeysHandler:
         # If the application services have not provided any keys via the C-S
         # API, query it directly.
         if self._query_appservices_for_otks:
-            # Partition the list into users an appservice has exclusive control
-            # over and others.
-            as_query = []
-            not_as_query = []
-            for user_id, device, algorithm in not_found:
-                if self.store.get_if_app_services_interested_in_user(user_id):
-                    as_query.append((user_id, device, algorithm))
-                else:
-                    not_as_query.append((user_id, device, algorithm))
-
             # Query the appservices for any OTKs.
             (
                 appservice_results,
                 not_found,
-            ) = await self.appservice_handler.claim_e2e_one_time_keys(as_query)
-
-            # Any users not found from the above query get combined with those
-            # that aren't appservice exclusive users.
-            not_found.extend(not_as_query)
+            ) = await self.appservice_handler.claim_e2e_one_time_keys(not_found)
         else:
             appservice_results = []
 
