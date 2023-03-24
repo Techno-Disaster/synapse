@@ -894,7 +894,7 @@ class ApplicationServicesHandler:
         claimed_keys: List[Dict[str, Dict[str, Dict[str, JsonDict]]]] = []
         for success, result in results:
             if success:
-                claimed_keys.extend(result[0])
+                claimed_keys.append(result[0])
                 missing.extend(result[1])
 
         return claimed_keys, missing

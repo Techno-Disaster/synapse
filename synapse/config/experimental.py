@@ -76,7 +76,7 @@ class ExperimentalConfig(Config):
 
         # MSC3983: Proxying OTK claim requests to exclusive ASes.
         self.msc3983_appservice_otk_claims: bool = experimental.get(
-            "msc3202_transaction_extensions", False
+            "msc3983_appservice_otk_claims", False
         )
 
         # MSC3706 (server-side support for partial state in /send_join responses)
