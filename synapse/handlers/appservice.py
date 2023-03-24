@@ -847,7 +847,7 @@ class ApplicationServicesHandler:
         """Claim one time keys from application services.
 
         Args:
-            query_list: An iterable of tuples of (user ID, device ID, algorithm).
+            query: An iterable of tuples of (user ID, device ID, algorithm).
 
         Returns:
             A tuple of:
