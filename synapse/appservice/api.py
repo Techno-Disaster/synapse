@@ -394,7 +394,7 @@ class ApplicationServiceApi(SimpleHttpClient):
         """Claim one time keys from an application service.
 
         Args:
-            query_list: An iterable of tuples of (user ID, device ID, algorithm).
+            query: An iterable of tuples of (user ID, device ID, algorithm).
 
         Returns:
             A tuple of:
