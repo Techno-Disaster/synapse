@@ -18,6 +18,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Mapping,
     Optional,
     Tuple,
     Union,
@@ -901,8 +902,8 @@ class ApplicationServicesHandler:
         return claimed_keys, missing
 
     async def query_keys(
-        self, query: Dict[str, Optional[ List[str]]]
-    ) -> Iterable[Dict[str, Dict[str, Dict[str, JsonDict]]]]:
+        self, query: Mapping[str, Optional[List[str]]]
+    ) -> Dict[str, Dict[str, Dict[str, JsonDict]]]:
         """Query application services for device keys.
 
         Args:
@@ -922,7 +923,9 @@ class ApplicationServicesHandler:
             # Find the associated appservice.
             for service in services:
                 if service.is_exclusive_user(user_id):
-                    query_by_appservice.setdefault(service.id, {})[user_id] = device_ids
+                    query_by_appservice.setdefault(service.id, {})[user_id] = (
+                        device_ids or []
+                    )
                     continue
 
         # Query each service in parallel.
@@ -941,10 +944,11 @@ class ApplicationServicesHandler:
             )
         )
 
-        # Patch together the results.
-        key_queries: List[Dict[str, Dict[str, Dict[str, JsonDict]]]] = []
+        # Patch together the results. Since the appservices are exclusive they
+        # can just be splatted together.
+        key_queries: Dict[str, Dict[str, Dict[str, JsonDict]]] = {}
         for success, result in results:
             if success:
-                key_queries.append(result)
+                key_queries.update(result)
 
         return key_queries
