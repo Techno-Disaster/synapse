@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from typing import Any, List, Mapping, Sequence, Union
 from unittest.mock import Mock
 
 from twisted.test.proto_helpers import MemoryReactor
 
 from synapse.appservice import ApplicationService
-from synapse.http.client import RawHeaders
 from synapse.server import HomeServer
 from synapse.types import JsonDict
 from synapse.util import Clock
@@ -127,7 +126,9 @@ class ApplicationServiceApiTestCase(unittest.HomeserverTestCase):
         }
 
         async def post_json_get_json(
-            uri: str, post_json: Any, headers: Mapping[Union[str, bytes], Sequence[Union[str, bytes]]]
+            uri: str,
+            post_json: Any,
+            headers: Mapping[Union[str, bytes], Sequence[Union[str, bytes]]],
         ) -> JsonDict:
             # Ensure the access token is passed as both a header and query arg.
             if not headers.get("Authorization"):
