@@ -410,8 +410,7 @@ class ApplicationServiceApi(SimpleHttpClient):
         for user_id, device, algorithm in query:
             body.setdefault(user_id, {}).setdefault(device, []).append(algorithm)
 
-        # TODO Does service.url end up with the /v1 in it?
-        uri = f"{service.url}/unstable/org.matrix.msc3983/keys/claim"
+        uri = f"{service.url}/_matrix/app/unstable/org.matrix.msc3983/keys/claim"
         try:
             response = await self.post_json_get_json(
                 uri,
