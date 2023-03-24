@@ -873,6 +873,7 @@ class ApplicationServicesHandler:
                     query_by_appservice.setdefault(service.id, []).append(
                         (user_id, device, algorithm)
                     )
+                    continue
 
         # Query each service in parallel.
         results = await make_deferred_yieldable(
